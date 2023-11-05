@@ -1,20 +1,16 @@
-import React from "react";
-import WordCloud from "./WordCloud";
+// App.js
 
-const words = [
-  { text: "React", size: 30 },
-  { text: "D3", size: 25 },
-  { text: "Word", size: 20 },
-  // Add more word objects with different sizes
-];
+import React from 'react';
+import './App.css';
+import WordCloud from './WordCloud';
 
 function App() {
-  return (
-    <div className="App">
-      <h1>Word Cloud Example</h1>
-      <WordCloud words={words} />
-    </div>
-  );
+    return (
+        <div className="App">
+            <h1>Word Cloud Visualization</h1>
+            <WordCloud />
+        </div>
+    );
 }
 
 export default App;
