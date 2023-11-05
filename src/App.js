@@ -1,23 +1,18 @@
-import logo from './logo.svg';
-import './App.css';
+import React from "react";
+import WordCloud from "./WordCloud";
+
+const words = [
+  { text: "React", size: 30 },
+  { text: "D3", size: 25 },
+  { text: "Word", size: 20 },
+  // Add more word objects with different sizes
+];
 
 function App() {
   return (
     <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
+      <h1>Word Cloud Example</h1>
+      <WordCloud words={words} />
     </div>
   );
 }
