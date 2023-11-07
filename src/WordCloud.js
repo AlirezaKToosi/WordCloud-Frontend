@@ -3,10 +3,20 @@ import axios from "axios";
 import * as d3 from "d3";
 import cloud from "d3-cloud";
 
+function getRandomColor() {
+  const letters = "0123456789ABCDEF";
+  let color = "#";
+  for (let i = 0; i < 6; i++) {
+    color += letters[Math.floor(Math.random() * 16)];
+  }
+  return color;
+}
+
 class WordCloud extends Component {
   constructor() {
     super();
     this.state = {
+      rssFeedUrl: "http://rss.cnn.com/rss/edition_travel.rss", // Default RSS feed URL
       wordCloudData: [],
     };
   }
@@ -16,20 +26,23 @@ class WordCloud extends Component {
   }
 
   fetchWordCloudData() {
+    const { rssFeedUrl } = this.state;
     axios
-      .post("http://localhost:8080/api/wordcloud/generate", {
-        rssFeedUrl: "http://rss.cnn.com/rss/edition.rss", // Replace with a valid RSS feed URL
-        wordFrequencyThreshold: 3, // Adjust the threshold as needed
+      .post("http://localhost:8080/api/v1/wordcloud/generate", {
+        rssFeedUrl,
+        wordFrequencyThreshold: 2, // Adjust the threshold as needed
       })
       .then((response) => {
         const wordFrequencies = response.data.wordFrequencies;
-    
+
         // Transform data to an array of objects
-        const transformedData = Object.entries(wordFrequencies).map(([word, frequency]) => ({
-          text: word,
-          size: frequency
-        }));
-    
+        const transformedData = Object.entries(wordFrequencies).map(
+          ([word, frequency]) => ({
+            text: word,
+            size: frequency,
+          })
+        );
+
         this.setState({ wordCloudData: transformedData }, () => {
           this.createWordCloud();
         });
@@ -41,18 +54,38 @@ class WordCloud extends Component {
 
   createWordCloud() {
     const wordFrequencies = this.state.wordCloudData;
+
+    // Combine and sum the frequencies for duplicate words
+    const wordFrequenciesMap = new Map();
+    wordFrequencies.forEach((wordObj) => {
+      const text = wordObj.text;
+      const size = wordObj.size;
+      if (wordFrequenciesMap.has(text)) {
+        wordFrequenciesMap.set(text, wordFrequenciesMap.get(text) + size);
+      } else {
+        wordFrequenciesMap.set(text, size);
+      }
+    });
+
+    // Convert the Map back to an array of objects
+    const uniqueWordFrequencies = Array.from(
+      wordFrequenciesMap,
+      ([text, size]) => ({ text, size })
+    );
+
     const layout = cloud()
       .size([800, 600]) // Adjust the size as needed
-      .words(wordFrequencies)
+      .words(uniqueWordFrequencies) // Use the deduplicated data
       .padding(5)
       .rotate(0)
-      .fontSize((d) => d.size)
-      .on("end", this.drawWordCloud);
-
-    layout.start();
+      .fontSize((d) => d.size * 10)
+      .on("end", this.drawWordCloud)
+      .start();
   }
 
   drawWordCloud(words) {
+    d3.select("#word-cloud svg").remove(); // Remove the previous word cloud
+
     d3.select("#word-cloud")
       .append("svg")
       .attr("width", 800) // Adjust the width as needed
@@ -64,14 +97,33 @@ class WordCloud extends Component {
       .enter()
       .append("text")
       .style("font-size", (d) => `${d.size}px`)
-      .style("fill", "steelblue") // Adjust the color as needed
-      .attr("text-anchor", "middle")
+      .style("fill", () => getRandomColor()) // Adjust the color as needed
+      .attr("text-anchor", "start")
       .attr("transform", (d) => `translate(${d.x},${d.y})`)
       .text((d) => d.text);
   }
 
+  handleInputChange = (event) => {
+    this.setState({ rssFeedUrl: event.target.value });
+  };
+
+  handleRefreshClick = () => {
+    this.fetchWordCloudData();
+  };
+
   render() {
-    return <div id="word-cloud"></div>;
+    return (
+      <div>
+        <input
+          type="text"
+          placeholder="Enter RSS feed URL"
+          value={this.state.rssFeedUrl}
+          onChange={this.handleInputChange}
+        />
+        <button onClick={this.handleRefreshClick}>Refresh Word Cloud</button>
+        <div id="word-cloud"></div>
+      </div>
+    );
   }
 }
 
